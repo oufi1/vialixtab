@@ -1,0 +1,109 @@
+plugins {
+    id 'net.minecraftforge.gradle' version '5.1.+'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+}
+
+version = '1.0.0'
+group = 'ru.vialix.vialixtab'
+archivesBaseName = 'vialixtab'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+    copyIdeResources = true
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            mods {
+                vialixtab {
+                    source sourceSets.main
+                }
+            }
+        }
+        server {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            mods {
+                vialixtab {
+                    source sourceSets.main
+                }
+            }
+            args '--nogui'
+        }
+        data {
+            workingDirectory project.file('run-data')
+            args '--mod', 'vialixtab', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    // Maven репозитории ForgeGradle добавляет автоматически
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.0'
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            mod_id: 'vialixtab',
+            mod_name: 'VialixTab',
+            mod_license: 'MIT',
+            mod_version: '1.0.0',
+            mod_authors: 'oufi1',
+            mod_description: 'Custom TAB list like plugin TAB for Forge 1.20.1.',
+            minecraft_version: '1.20.1',
+            minecraft_version_range: '[1.20.1,1.21)',
+            forge_version: '47.4.0',
+            forge_version_range: '[47.4.0,)',
+            loader_version_range: '[47,)',
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    archiveBaseName.set('vialixtab')
+    manifest {
+        attributes([
+                'Specification-Title'     : 'vialixtab',
+                'Specification-Vendor'    : 'oufi1',
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.jar.archiveVersion,
+                'Implementation-Vendor'   : 'oufi1',
+                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+    finalizedBy 'reobfJar'
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
